@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Supabase Chat</title>
+  <title>Simple Supabase Chat</title>
   <style>
     body { font-family: Arial; display:flex; justify-content:center; margin-top:50px; }
     #chat { width:400px; }
@@ -20,70 +20,64 @@
     <div id="input">
       <input id="username" placeholder="Your name" />
       <input id="text" placeholder="Message" />
-      <button onclick="sendMessage()">Send</button>
+      <button id="sendBtn">Send</button>
     </div>
     <div id="error"></div>
   </div>
 
   <script>
-    const SUPABASE_URL = "https://gmlyelaprombqbryzojb.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtbHllbGFwcm9tYnFicnl6b2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDQyNDUsImV4cCI6MjA4MzkyMDI0NX0.ke8C9OEV66O9IhAKVsmRaHFOduta5FrK6Z6hRHbSs2w"
+    // 🔑 Replace with your own Supabase credentials
+    const SUPABASE_URL = "https://gmlyelaprombqbryzojb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtbHllbGFwcm9tYnFicnl6b2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzNDQyNDUsImV4cCI6MjA4MzkyMDI0NX0.ke8C9OEV66O9IhAKVsmRaHFOduta5FrK6Z6hRHbSs2w";
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    const messagesEl = document.getElementById("messages")
-    const errorEl = document.getElementById("error")
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const messagesEl = document.getElementById("messages");
+    const errorEl = document.getElementById("error");
+    const sendBtn = document.getElementById("sendBtn");
 
-    // Load old messages
+    // Simple function to show a message in the chat
+    function addMessage(username, message) {
+      const div = document.createElement("div");
+      div.textContent = username + ": " + message;
+      messagesEl.append(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Send message when button is clicked
+    sendBtn.addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const message = document.getElementById("text").value.trim();
+      if (!username || !message) return;
+
+      try {
+        const { error } = await supabase.from('messages').insert([{ username, message }]);
+        if (error) {
+          errorEl.textContent = "Error sending message: " + error.message;
+        } else {
+          addMessage(username, message); // show it immediately
+          document.getElementById("text").value = "";
+          errorEl.textContent = "";
+        }
+      } catch (e) {
+        errorEl.textContent = "Unexpected error: " + e.message;
+      }
+    });
+
+    // Optional: load old messages when page loads
     async function loadMessages() {
       try {
-        const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: true })
+        const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
         if (error) {
-          errorEl.textContent = "Error loading messages: " + error.message
+          errorEl.textContent = "Error loading messages: " + error.message;
         } else {
-          messagesEl.innerHTML = ""
-          data.forEach(msg => {
-            const div = document.createElement("div")
-            div.textContent = msg.username + ": " + msg.message
-            messagesEl.append(div)
-          })
-          messagesEl.scrollTop = messagesEl.scrollHeight
+          data.forEach(msg => addMessage(msg.username, msg.message));
         }
       } catch (e) {
-        errorEl.textContent = "Unexpected error: " + e.message
+        errorEl.textContent = "Unexpected error: " + e.message;
       }
     }
 
-    loadMessages()
-
-    // Listen for new messages
-    supabase
-      .channel('messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        const msg = payload.new
-        const div = document.createElement("div")
-        div.textContent = msg.username + ": " + msg.message
-        messagesEl.append(div)
-        messagesEl.scrollTop = messagesEl.scrollHeight
-      })
-      .subscribe()
-
-    async function sendMessage() {
-      const username = document.getElementById("username").value
-      const text = document.getElementById("text").value
-      if (!username || !text) return
-
-      try {
-        const { error } = await supabase.from('messages').insert([{ username, message: text }])
-        if (error) {
-          errorEl.textContent = "Error sending message: " + error.message
-        } else {
-          document.getElementById("text").value = ""
-          errorEl.textContent = ""
-        }
-      } catch (e) {
-        errorEl.textContent = "Unexpected error: " + e.message
-      }
-    }
+    loadMessages();
   </script>
 </body>
 </html>
