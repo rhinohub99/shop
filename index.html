@@ -2,31 +2,184 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tawk.to Test</title>
+<title>Shop Chat Demo</title>
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: #005eff; /* All-blue background */
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0f1115;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+#loginPage, #shopPage {
+  width:400px;
+  padding:20px;
+  background:#151820;
+  border-radius:10px;
+  box-shadow:0 0 15px rgba(0,0,0,0.5);
+}
+
+h2 { text-align:center; color:#4da6ff; }
+
+input {
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border-radius:5px;
+  border:none;
+  box-sizing:border-box;
+}
+
+button {
+  width:100%;
+  padding:10px;
+  background:#4da6ff;
+  border:none;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+  border-radius:5px;
+  margin-top:5px;
+}
+
+button:hover { background:#3399ff; }
+
+#chatBox {
+  width:100%;
+  height:300px;
+  border:2px solid #4da6ff;
+  border-radius:10px;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  background:#151820;
+  margin-top:10px;
+}
+
+#messages {
+  flex:1;
+  overflow-y:auto;
+  margin-bottom:10px;
+}
+
+.message {
+  margin:5px 0;
+  padding:5px 10px;
+  border-radius:5px;
+  word-wrap:break-word;
+}
+
+.customer { background:#4da6ff; color:#000; align-self:flex-start; }
+.admin { background:#ffcc00; color:#000; align-self:flex-end; }
+
+#inputBox {
+  display:flex;
+}
+
+#inputBox input {
+  flex:1;
+  padding:8px;
+  border-radius:5px 0 0 5px;
+  border:none;
+}
+
+#inputBox button {
+  padding:8px 12px;
+  border-radius:0 5px 5px 0;
+  border:none;
+  background:#4da6ff;
+  cursor:pointer;
+  color:#000;
+  font-weight:bold;
 }
 </style>
 </head>
 <body>
 
-<!-- Tawk.to Script -->
-<script type="text/javascript">
-var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-(function(){
-var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-s1.async=true;
-s1.src='https://embed.tawk.to/6966bb761f65f8197aa69413/1jeskoi4o';
-s1.charset='UTF-8';
-s1.setAttribute('crossorigin','*');
-s0.parentNode.insertBefore(s1,s0);
-})();
+<div id="loginPage">
+  <h2>Login (Optional)</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" placeholder="Password" type="password">
+  <button onclick="login()">Login as Admin</button>
+  <button onclick="skipLogin()">Skip Login</button>
+  <p id="errorMsg" style="color:red;text-align:center;"></p>
+</div>
+
+<div id="shopPage" style="display:none;">
+  <h2>DigitalMarket Shop</h2>
+  <button onclick="openChat()">Open Chat</button>
+
+  <div id="chatBox" style="display:none;">
+    <div id="messages"></div>
+    <div id="inputBox">
+      <input id="msgInput" placeholder="Type your message..."/>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let isAdmin = false;
+let messages = JSON.parse(localStorage.getItem("chatDemo")) || [];
+
+// Render messages
+function renderMessages() {
+  const messagesDiv = document.getElementById("messages");
+  messagesDiv.innerHTML = "";
+  messages.forEach(msg => {
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.classList.add(msg.user === "admin" ? "admin" : "customer");
+    div.innerText = msg.text;
+    messagesDiv.appendChild(div);
+  });
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Login
+function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const errorMsg = document.getElementById("errorMsg");
+  if(username === "kirby" && password === "kirby") {
+    isAdmin = true;
+    showShop();
+  } else {
+    errorMsg.innerText = "Incorrect username or password";
+  }
+}
+
+function skipLogin() {
+  showShop();
+}
+
+function showShop() {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("shopPage").style.display = "block";
+  renderMessages();
+  if(isAdmin) openChat(); // Admin sees chat automatically
+}
+
+// Open chat
+function openChat() {
+  document.getElementById("chatBox").style.display = "flex";
+  renderMessages(); // Ensure messages render when opened
+}
+
+// Send message
+function sendMessage() {
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if(!text) return;
+  messages.push({text, user: isAdmin ? "admin" : "customer"});
+  localStorage.setItem("chatDemo", JSON.stringify(messages));
+  input.value = "";
+  renderMessages(); // Re-render after sending
+}
 </script>
 
 </body>
